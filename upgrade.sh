@@ -1,0 +1,1 @@
+helm upgrade vault hashicorp/vault -n karned -f values.yaml

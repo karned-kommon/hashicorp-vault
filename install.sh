@@ -1,0 +1,1 @@
+helm install vault hashicorp/vault -n karned -f values.yaml
