@@ -4,11 +4,10 @@ server:
     config: |
       storage "gcs" {
         bucket = "vault-koden"
-        credentials_file = "/vault/userconfig/gcs-credentials/gcs.json"
       }
       listener "tcp" {
         address = "0.0.0.0:8200"
-        tls_disable = 0
+        tls_disable = 1  
       }
       ui = true
   volumes:
@@ -19,11 +18,14 @@ server:
     - name: gcs-creds
       mountPath: /vault/userconfig/gcs-credentials
       readOnly: true
+  extraEnvironmentVars:
+    GOOGLE_APPLICATION_CREDENTIALS: "/vault/userconfig/gcs-credentials/gcs.json"
   ingress:
     enabled: true
     annotations:
       kubernetes.io/ingress.class: nginx
       cert-manager.io/cluster-issuer: letsencrypt-prod
+      nginx.ingress.kubernetes.io/backend-protocol: HTTP  
     hosts:
       - host: vault.karned.bzh
         paths:
@@ -31,6 +33,6 @@ server:
     tls:
       - hosts:
           - vault.karned.bzh
-        secretName: vault-tls
+        secretName: vault-tls  
 ui:
   enabled: true
