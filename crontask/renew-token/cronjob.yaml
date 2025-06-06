@@ -3,7 +3,7 @@ kind: CronJob
 metadata:
   name: vault-token-renew
 spec:
-  schedule: "0 * * * *"
+  schedule: "0 0 * * *"
   jobTemplate:
     spec:
       template:
@@ -12,22 +12,39 @@ spec:
           - name: renew-token
             image: your-dockerhub-username/vault-token-renew:latest
             env:
-            - name: VAULT_ADDR
-              value: "https://vault.example.com"
-            - name: VAULT_TOKEN
+            - name: REDIS_HOST
               valueFrom:
                 secretKeyRef:
-                  name: vault-token-secret
-                  key: token
-            - name: REDIS_HOST
-              value: "redis"
+                  name: redis-secret
+                  key: REDIS_HOST
             - name: REDIS_PORT
-              value: "6379"
+              valueFrom:
+                secretKeyRef:
+                  name: redis-secret
+                  key: REDIS_PORT
             - name: REDIS_DB
-              value: "0"
+              valueFrom:
+                secretKeyRef:
+                  name: redis-secret
+                  key: REDIS_DB
             - name: REDIS_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: redis-password-secret
-                  key: password
+                  name: redis-secret
+                  key: REDIS_PASSWORD
+            - name: VAULT_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: vault-secret
+                  key: VAULT_HOST
+            - name: VAULT_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: vault-secret
+                  key: VAULT_PORT
+            - name: VAULT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: vault-secret
+                  key: VAULT_TOKEN
           restartPolicy: OnFailure
