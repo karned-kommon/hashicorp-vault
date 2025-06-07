@@ -60,13 +60,13 @@ class VaultTokenManager:
         self.initial_token = Config.get_vault_token()
 
     def get_token(self):
-        token = self.redis_client.get("vault_token")
+        token = self.redis_client.get("VAULT_TOKEN")
         if token:
-            logger.info("Using vault_token from Redis")
+            logger.info("Using VAULT_TOKEN from Redis")
             return token
 
-        logger.info("vault_token not found in Redis, using from environment")
-        self.redis_client.set("vault_token", self.initial_token)
+        logger.info("VAULT_TOKEN not found in Redis, using from environment")
+        self.redis_client.set("VAULT_TOKEN", self.initial_token)
         return self.initial_token
 
     def renew_token(self):
@@ -84,7 +84,7 @@ class VaultTokenManager:
             raise
 
     def store_token(self, token):
-        self.redis_client.set("vault_token", token)
+        self.redis_client.set("VAULT_TOKEN", token)
 
     def get_vault_client(self):
         return hvac.Client(url=self.vault_addr, token=self.get_token())

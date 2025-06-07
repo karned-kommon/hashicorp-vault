@@ -118,7 +118,7 @@ class TestVaultTokenManager:
         manager = VaultTokenManager()
         token = manager.get_token()
 
-        mock_redis_instance.get.assert_called_once_with("vault_token")
+        mock_redis_instance.get.assert_called_once_with("VAULT_TOKEN")
         assert token == "redis-token"
 
     def test_get_token_from_env(self, mocker):
@@ -134,8 +134,8 @@ class TestVaultTokenManager:
         manager = VaultTokenManager()
         token = manager.get_token()
 
-        mock_redis_instance.get.assert_called_once_with("vault_token")
-        mock_redis_instance.set.assert_called_once_with("vault_token", "env-token")
+        mock_redis_instance.get.assert_called_once_with("VAULT_TOKEN")
+        mock_redis_instance.set.assert_called_once_with("VAULT_TOKEN", "env-token")
         assert token == "env-token"
 
     def test_renew_token_success(self, mocker):
@@ -191,7 +191,7 @@ class TestVaultTokenManager:
         manager = VaultTokenManager()
         manager.store_token("new-token")
 
-        mock_redis_instance.set.assert_called_with("vault_token", "new-token")
+        mock_redis_instance.set.assert_called_with("VAULT_TOKEN", "new-token")
 
     def test_get_vault_client(self, mocker):
         """Test get_vault_client."""

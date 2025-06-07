@@ -87,3 +87,12 @@ Génération du token JWT
 ```sh
 vault token create -policy="api-access-policy" -period=24h -orphan
 ```
+
+## Renew Vault Token
+Le Vault token a une durée de vie limitée. 
+Il faut le renouveler régulièrement pour éviter qu'il n'expire.
+
+Le renouvellement est effectué en Cronjob.
+
+La source est dans le dossier crontask/renew
+
