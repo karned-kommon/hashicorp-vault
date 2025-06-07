@@ -15,7 +15,7 @@ class Config:
     def get_vault_addr():
         host = os.environ["VAULT_HOST"]
         port = os.environ["VAULT_PORT"]
-        return f"http://{host}:{port}"
+        return f"{host}:{port}"
 
     @staticmethod
     def get_vault_token():
