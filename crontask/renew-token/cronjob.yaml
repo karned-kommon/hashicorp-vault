@@ -10,7 +10,7 @@ spec:
         spec:
           containers:
           - name: renew-token
-            image: your-dockerhub-username/vault-token-renew:latest
+            image: killiankopp/renew-vault-token:latest
             env:
             - name: REDIS_HOST
               valueFrom:
