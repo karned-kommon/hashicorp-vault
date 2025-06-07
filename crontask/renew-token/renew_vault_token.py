@@ -13,9 +13,6 @@ class Config:
 
     @staticmethod
     def get_vault_addr():
-        if "VAULT_ADDR" in os.environ:
-            return os.environ["VAULT_ADDR"]
-
         host = os.environ["VAULT_HOST"]
         port = os.environ["VAULT_PORT"]
         return f"http://{host}:{port}"

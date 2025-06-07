@@ -8,17 +8,10 @@ from renew_vault_token import Config, RedisClient, VaultTokenManager, main
 class TestConfig:
     """Tests for the Config class."""
 
-    def test_get_vault_addr_with_vault_addr_env(self, mock_env_vars):
-        """Test get_vault_addr when VAULT_ADDR is set."""
+    def test_get_vault_addr(self, mock_env_vars):
+        """Test get_vault_addr using VAULT_HOST and VAULT_PORT."""
         assert Config.get_vault_addr() == "http://vault:8200"
 
-    def test_get_vault_addr_with_host_port_env(self, monkeypatch):
-        """Test get_vault_addr when VAULT_HOST and VAULT_PORT are set."""
-        # Clear VAULT_ADDR to test the fallback
-        monkeypatch.delenv("VAULT_ADDR", raising=False)
-        monkeypatch.setenv("VAULT_HOST", "vault")
-        monkeypatch.setenv("VAULT_PORT", "8200")
-        assert Config.get_vault_addr() == "http://vault:8200"
 
     def test_get_vault_token(self, mock_env_vars):
         """Test get_vault_token."""

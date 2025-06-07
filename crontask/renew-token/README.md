@@ -10,7 +10,7 @@ The `renew_vault_token.py` script is designed to be run as a cron job to periodi
 
 The script requires the following environment variables:
 
-- `VAULT_ADDR` or (`VAULT_HOST` and `VAULT_PORT`): The address of the Vault server
+- `VAULT_HOST` and `VAULT_PORT`: The address of the Vault server
 - `VAULT_TOKEN`: The initial Vault token to use
 - `REDIS_HOST`: The Redis server hostname
 - `REDIS_PORT`: The Redis server port
