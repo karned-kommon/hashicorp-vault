@@ -73,6 +73,7 @@ pytest
             steps {
                 container('docker') {
                     sh """
+                    cd crontask/renew-token
                     docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
                     """
                 }
