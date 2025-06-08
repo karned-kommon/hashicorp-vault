@@ -15,7 +15,7 @@ spec:
     - mountPath: /var/run/docker.sock
       name: docker-sock
   - name: python
-    image: python:3.11-slim
+    image: python:3.12-slim
     command:
     - cat
     tty: true
@@ -58,6 +58,7 @@ spec:
                 container('python') {
                     catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
 sh '''
+cd crontask/renew-token
 python -m venv venv
 . venv/bin/activate
 pip install -r requirements.txt
