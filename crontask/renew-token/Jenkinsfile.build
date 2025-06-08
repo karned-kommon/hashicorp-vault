@@ -1,0 +1,118 @@
+pipeline {
+    agent {
+        kubernetes {
+            yaml """
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: docker
+    image: docker:24.0.2
+    command:
+    - cat
+    tty: true
+    volumeMounts:
+    - mountPath: /var/run/docker.sock
+      name: docker-sock
+  - name: python
+    image: python:3.11-slim
+    command:
+    - cat
+    tty: true
+  volumes:
+  - name: docker-sock
+    hostPath:
+      path: /var/run/docker.sock
+"""
+        }
+    }
+    parameters {
+        string(name: 'GITHUB_BRANCH', defaultValue: 'main', description: 'Git branch to checkout')
+    }
+    environment {
+        DOCKER_IMAGE = 'killiankopp/renew-vault-token'
+        URL_VERSION = 'https://raw.githubusercontent.com/karned-kommon/hashicorp-vault/main/crontask/renew-token/version'
+        URL_REPO = 'https://github.com/karned-kommon/hashicorp-vault.git'
+    }
+    stages {
+        stage('Retrieve Version') {
+            steps {
+                script {
+                    env.DOCKER_TAG = sh(
+                        script: "curl -s ${env.URL_VERSION}",
+                        returnStdout: true
+                    ).trim()
+                }
+                echo "Version récupérée : ${env.DOCKER_TAG}"
+            }
+        }
+
+        stage('Clone Repository') {
+            steps {
+                git branch: "${params.GITHUB_BRANCH}", url: "${env.URL_REPO}"
+            }
+        }
+
+        stage('Run Units Tests') {
+            steps {
+                container('python') {
+                    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+sh '''
+python -m venv venv
+. venv/bin/activate
+pip install -r requirements.txt
+pytest
+'''
+                    }
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                container('docker') {
+                    sh """
+                    docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
+                    """
+                }
+            }
+        }
+
+        stage('Push to Docker Hub') {
+            steps {
+                container('docker') {
+                    withCredentials([usernamePassword(credentialsId: 'DOCKERHUB_CREDENTIALS', usernameVariable: 'DOCKERHUB_USR', passwordVariable: 'DOCKERHUB_PSW')]) {
+                        sh """
+                        echo $DOCKERHUB_PSW | docker login -u $DOCKERHUB_USR --password-stdin
+                        docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Send Slack Message') {
+            steps {
+                container('python') {
+                    withCredentials([string(credentialsId: 'SLACK_WEBHOOK_URL', variable: 'SLACK_WEBHOOK_URL')]) {
+                        script {
+                            sh '''
+                            pip install --disable-pip-version-check --no-cache-dir requests
+                            python -c "import os, requests;
+webhook = os.getenv('SLACK_WEBHOOK_URL');
+docker_image = os.getenv('DOCKER_IMAGE');
+docker_tag = os.getenv('DOCKER_TAG');
+message = {
+    'text': f'New version of {docker_image}.{docker_tag} has been built and pushed to Docker Hub',
+    'username': 'Jenkins Bot',
+    'icon_emoji': ':rocket:'
+};
+requests.post(webhook, json=message)"
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

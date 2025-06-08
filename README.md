@@ -96,3 +96,7 @@ Le renouvellement est effectué en Cronjob.
 
 La source est dans le dossier crontask/renew
 
+Le renouvellement est effectué toutes les 24 heures par prolongation du TTL.
+
+Pour changer le token, il faut en créer un nouveau et mettre à jour le secret correspondant.
+Une fois le secret mis à jour, il faut supprimer le cache ou attendre le renouvellement.
