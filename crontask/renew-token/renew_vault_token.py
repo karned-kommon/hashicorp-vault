@@ -3,6 +3,7 @@ import requests
 import redis
 import logging
 import hvac
+import datetime
 from urllib.parse import urlparse
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -74,8 +75,23 @@ class VaultTokenManager:
         try:
             response = requests.post(url, headers=headers)
             response.raise_for_status()
-            new_token = response.json()["auth"]["client_token"]
-            return new_token
+            response_json = response.json()
+
+            if "auth" in response_json and "client_token" in response_json["auth"]:
+                new_token = response_json["auth"]["client_token"]
+                if new_token == token:
+                    logger.info("New token is the same as the old token")
+
+                # Extract and log the TTL if available
+                ttl = None
+                if "lease_duration" in response_json["auth"]:
+                    ttl = response_json["auth"]["lease_duration"]
+                    logger.info(f"New token TTL: {ttl} seconds")
+
+                return new_token, ttl
+            else:
+                logger.warning("No new token found in response, using current token")
+                return token, None
         except requests.exceptions.RequestException as e:
             logger.error(f"Error renewing Vault token: {e}")
             raise
@@ -91,9 +107,14 @@ def main():
     token_manager = VaultTokenManager()
 
     try:
-        new_token = token_manager.renew_token()
+        new_token, ttl = token_manager.renew_token()
         token_manager.store_token(new_token)
         logger.info("Vault token renewed and stored in Redis.")
+        if ttl is not None:
+            logger.info(f"The new token will expire in {ttl} seconds.")
+            expiration_time = datetime.datetime.now() + datetime.timedelta(seconds=ttl)
+            logger.info(f"New token expiration date: {expiration_time.strftime('%Y-%m-%d %H:%M:%S')}")
+            logger.info(f"New token expires at: {expiration_time.timestamp()}")
     except Exception as e:
         logger.error(f"Failed to renew Vault token: {e}")
         raise

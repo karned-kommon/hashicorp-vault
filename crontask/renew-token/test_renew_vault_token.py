@@ -143,17 +143,43 @@ class TestVaultTokenManager:
         mock_config.get_vault_token.return_value = "env-token"
 
         mock_response = mocker.Mock()
-        mock_response.json.return_value = {"auth": {"client_token": "new-token"}}
+        mock_response.json.return_value = {"auth": {"client_token": "new-token", "lease_duration": 3600}}
         mock_post.return_value = mock_response
 
         manager = VaultTokenManager()
-        new_token = manager.renew_token()
+        new_token, ttl = manager.renew_token()
 
         mock_post.assert_called_once_with(
             "http://vault:8200/v1/auth/token/renew-self",
             headers={"X-Vault-Token": "old-token"}
         )
         assert new_token == "new-token"
+        assert ttl == 3600
+
+    def test_renew_token_no_new_token(self, mocker):
+        """Test renew_token when response doesn't include a new token."""
+        mock_redis_client = mocker.patch('renew_vault_token.RedisClient')
+        mock_config = mocker.patch('renew_vault_token.Config')
+        mock_post = mocker.patch('requests.post')
+
+        mock_redis_instance = mock_redis_client.return_value
+        mock_redis_instance.get.return_value = "old-token"
+        mock_config.get_vault_addr.return_value = "http://vault:8200"
+        mock_config.get_vault_token.return_value = "env-token"
+
+        mock_response = mocker.Mock()
+        mock_response.json.return_value = {"data": {"some_data": "value"}}  # No auth.client_token
+        mock_post.return_value = mock_response
+
+        manager = VaultTokenManager()
+        token, ttl = manager.renew_token()
+
+        mock_post.assert_called_once_with(
+            "http://vault:8200/v1/auth/token/renew-self",
+            headers={"X-Vault-Token": "old-token"}
+        )
+        assert token == "old-token"  # Should return the old token when no new token in response
+        assert ttl is None  # Should return None for TTL when no new token in response
 
     def test_renew_token_failure(self, mocker):
         """Test renew_token failure case."""
@@ -211,7 +237,7 @@ def test_main_success(mocker):
     """Test main function successful case."""
     mock_token_manager_class = mocker.patch('renew_vault_token.VaultTokenManager')
     mock_token_manager = mock_token_manager_class.return_value
-    mock_token_manager.renew_token.return_value = "new-token"
+    mock_token_manager.renew_token.return_value = ("new-token", 3600)
 
     main()
 
