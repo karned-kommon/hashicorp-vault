@@ -9,7 +9,7 @@ def mock_env_vars():
 
     # Set up test environment variables
     os.environ.update({
-        "VAULT_HOST": "vault",
+        "VAULT_HOST": "http://vault",
         "VAULT_PORT": "8200",
         "VAULT_TOKEN": "test-token",
         "REDIS_HOST": "redis",
