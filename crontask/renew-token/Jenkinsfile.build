@@ -53,42 +53,6 @@ spec:
             }
         }
 
-        stage('Increment Version') {
-            steps {
-                script {
-                    // Parse the current version
-                    def (major, minor, patch) = env.DOCKER_TAG.tokenize('.')
-
-                    // Increment the patch version
-                    patch = patch.toInteger() + 1
-
-                    // Create the new version
-                    env.NEW_VERSION = "${major}.${minor}.${patch}"
-
-                    // Update the version file
-                    sh "echo ${env.NEW_VERSION} > crontask/renew-token/version"
-
-                    // Update the DOCKER_TAG to use the new version
-                    env.DOCKER_TAG = env.NEW_VERSION
-
-                    echo "Version incrémentée : ${env.DOCKER_TAG}"
-
-                    // Configure Git
-                    sh "git config user.email 'jenkins@example.com'"
-                    sh "git config user.name 'Jenkins'"
-
-                    // Commit and push the changes
-                    withCredentials([usernamePassword(credentialsId: 'GITHUB_CREDENTIALS', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
-                        sh """
-                        git add crontask/renew-token/version
-                        git commit -m "Increment version to ${env.NEW_VERSION} [ci skip]"
-                        git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/karned-kommon/hashicorp-vault.git ${params.GITHUB_BRANCH}
-                        """
-                    }
-                }
-            }
-        }
-
         stage('Run Units Tests') {
             steps {
                 container('python') {
