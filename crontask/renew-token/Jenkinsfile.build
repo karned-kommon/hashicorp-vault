@@ -53,6 +53,42 @@ spec:
             }
         }
 
+        stage('Increment Version') {
+            steps {
+                script {
+                    // Parse the current version
+                    def (major, minor, patch) = env.DOCKER_TAG.tokenize('.')
+
+                    // Increment the patch version
+                    patch = patch.toInteger() + 1
+
+                    // Create the new version
+                    env.NEW_VERSION = "${major}.${minor}.${patch}"
+
+                    // Update the version file
+                    sh "echo ${env.NEW_VERSION} > crontask/renew-token/version"
+
+                    // Update the DOCKER_TAG to use the new version
+                    env.DOCKER_TAG = env.NEW_VERSION
+
+                    echo "Version incrémentée : ${env.DOCKER_TAG}"
+
+                    // Configure Git
+                    sh "git config user.email 'jenkins@example.com'"
+                    sh "git config user.name 'Jenkins'"
+
+                    // Commit and push the changes
+                    withCredentials([usernamePassword(credentialsId: 'GITHUB_CREDENTIALS', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
+                        sh """
+                        git add crontask/renew-token/version
+                        git commit -m "Increment version to ${env.NEW_VERSION} [ci skip]"
+                        git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/karned-kommon/hashicorp-vault.git ${params.GITHUB_BRANCH}
+                        """
+                    }
+                }
+            }
+        }
+
         stage('Run Units Tests') {
             steps {
                 container('python') {
@@ -86,7 +122,9 @@ pytest
                     withCredentials([usernamePassword(credentialsId: 'DOCKERHUB_CREDENTIALS', usernameVariable: 'DOCKERHUB_USR', passwordVariable: 'DOCKERHUB_PSW')]) {
                         sh """
                         echo $DOCKERHUB_PSW | docker login -u $DOCKERHUB_USR --password-stdin
+                        docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest
                         docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
+                        docker push ${DOCKER_IMAGE}:latest
                         """
                     }
                 }
@@ -105,7 +143,7 @@ webhook = os.getenv('SLACK_WEBHOOK_URL');
 docker_image = os.getenv('DOCKER_IMAGE');
 docker_tag = os.getenv('DOCKER_TAG');
 message = {
-    'text': f'New version of {docker_image}.{docker_tag} has been built and pushed to Docker Hub',
+    'text': f'New version of {docker_image}:{docker_tag} and {docker_image}:latest have been built and pushed to Docker Hub',
     'username': 'Jenkins Bot',
     'icon_emoji': ':rocket:'
 };
